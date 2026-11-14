@@ -1,0 +1,23 @@
+name = "fintrack-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+# Origens do front liberadas no CORS (separadas por vírgula).
+ALLOWED_ORIGINS = "http://localhost:5173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fintrack-db"
+# Crie com `npx wrangler d1 create fintrack-db` e cole o id aqui.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://fintrack-web.pages.dev"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "fintrack-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

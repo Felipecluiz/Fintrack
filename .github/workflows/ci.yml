@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Spec traceability (every AC in specs must appear in a test)
+        run: |
+          missing=0
+          for ac in $(grep -rhoE "AC-[0-9]{3}" specs/features/0*/spec.md | sort -u); do
+            if grep -q "(UI)" <(grep -rh "\*\*$ac\*\*" specs/features); then continue; fi
+            if ! grep -rq "$ac" apps/api/test; then echo "::warning::$ac has no test"; missing=1; fi
+          done
+          exit $missing
