@@ -1,5 +1,9 @@
 export type DomainErrorCode =
-  'VALIDATION_ERROR' | 'NOT_FOUND' | 'CONFLICT' | 'BUSINESS_RULE_VIOLATION';
+  | 'VALIDATION_ERROR'
+  | 'UNAUTHORIZED'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'BUSINESS_RULE_VIOLATION';
 
 export abstract class DomainError extends Error {
   abstract readonly code: DomainErrorCode;
@@ -13,6 +17,15 @@ export abstract class DomainError extends Error {
 /** Um valor não respeita um invariante do modelo (formato, faixa, obrigatoriedade). */
 export class ValidationError extends DomainError {
   readonly code = 'VALIDATION_ERROR' as const;
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/** Credenciais ausentes, inválidas ou expiradas. */
+export class UnauthorizedError extends DomainError {
+  readonly code = 'UNAUTHORIZED' as const;
 
   constructor(message: string) {
     super(message);

@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.wrangler/**', '**/node_modules/**'] },
+  { ignores: ['**/dist/**', '**/.wrangler/**', '**/node_modules/**', '**/coverage/**', 'playwright-report/**', 'test-results/**'] },
   ...tseslint.configs.recommended,
   {
     rules: {

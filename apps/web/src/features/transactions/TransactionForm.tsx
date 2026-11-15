@@ -4,6 +4,7 @@ import { todayIso } from '../../shared/lib/dates';
 import { centsToInput, parseAmountToCents } from '../../shared/lib/money';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
 import { SegmentedControl } from '../../shared/ui/SegmentedControl';
+import { useToast } from '../../shared/ui/Toaster';
 import { useSaveTransaction } from './hooks';
 
 interface TransactionFormProps {
@@ -21,6 +22,7 @@ export function TransactionForm({ transaction, categories, onClose }: Transactio
   const [occurredOn, setOccurredOn] = useState(transaction?.occurredOn ?? todayIso());
   const [amountError, setAmountError] = useState<string | null>(null);
   const saveTransaction = useSaveTransaction();
+  const notify = useToast();
 
   const categoriesOfType = categories.filter((c) => c.type === type);
 
@@ -45,7 +47,12 @@ export function TransactionForm({ transaction, categories, onClose }: Transactio
         id: transaction?.id,
         input: { description, amountCents, type, categoryId, occurredOn },
       },
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          notify(transaction ? 'Transação atualizada' : 'Transação registrada');
+          onClose();
+        },
+      },
     );
   };
 

@@ -1,23 +1,39 @@
 name = "fintrack-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
+# Exigido pelo @cloudflare/vitest-pool-workers (testes de integração).
+compatibility_flags = ["nodejs_compat"]
 
+# ---------- Desenvolvimento local (`wrangler dev`) ----------
 [vars]
 # Origens do front liberadas no CORS (separadas por vírgula).
 ALLOWED_ORIGINS = "http://localhost:5173"
+# Só para desenvolvimento. Em produção use: npx wrangler secret put JWT_SECRET --env production
+JWT_SECRET = "dev-only-secret-change-me-0123456789abcdef"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "fintrack-db"
 # Crie com `npx wrangler d1 create fintrack-db` e cole o id aqui.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "624ad272-fc60-4776-a3b3-03d102ac689c"
 migrations_dir = "migrations"
 
+# ---------- Produção (`--env production`) ----------
+# Variáveis NÃO são herdadas entre ambientes: o JWT_SECRET de produção vem
+# exclusivamente do secret (sem ele, a API recusa autenticar).
 [env.production.vars]
-ALLOWED_ORIGINS = "https://fintrack-web.pages.dev"
+# Produção + previews do Pages (main.…, <hash>.…)
+ALLOWED_ORIGINS = "https://fintrack-web-0ff.pages.dev,https://*.fintrack-web-0ff.pages.dev"
 
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "fintrack-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "624ad272-fc60-4776-a3b3-03d102ac689c"
 migrations_dir = "migrations"
+
+# BR-406: até 10 tentativas de login/cadastro por minuto por IP.
+[[env.production.unsafe.bindings]]
+name = "AUTH_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }

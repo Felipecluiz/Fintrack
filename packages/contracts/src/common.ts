@@ -20,7 +20,13 @@ export interface Paginated<T> {
 }
 
 export type ErrorCode =
-  'VALIDATION_ERROR' | 'NOT_FOUND' | 'CONFLICT' | 'BUSINESS_RULE_VIOLATION' | 'INTERNAL_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'UNAUTHORIZED'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'BUSINESS_RULE_VIOLATION'
+  | 'RATE_LIMITED'
+  | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
   error: {

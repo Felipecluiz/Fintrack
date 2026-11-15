@@ -1,32 +1,22 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../features/auth/AuthProvider';
+import { Brand } from '../shared/ui/Brand';
+import { ThemeToggle } from '../shared/ui/ThemeToggle';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/transactions', label: 'Transações', end: false },
-  { to: '/categories', label: 'Categorias', end: false },
+  { to: '/app', label: 'Dashboard', end: true },
+  { to: '/app/transactions', label: 'Transações', end: false },
+  { to: '/app/categories', label: 'Categorias', end: false },
 ];
 
 export function Layout() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">
-          <span className="brand__mark" aria-hidden>
-            <svg viewBox="0 0 32 32" width="28" height="28">
-              <rect width="32" height="32" rx="8" fill="currentColor" />
-              <path
-                d="M9 21l5-6 4 3 5-7"
-                stroke="white"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          Fintrack
-        </div>
-        <nav className="nav">
+        <Brand to="/app" />
+        <nav className="nav" aria-label="Principal">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -38,6 +28,25 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="sidebar__footer">
+          {user && (
+            <div className="user-chip" title={user.email}>
+              <span className="user-chip__avatar" aria-hidden>
+                {user.name.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="user-chip__text">
+                <strong>{user.name}</strong>
+                <span className="muted">{user.email}</span>
+              </span>
+            </div>
+          )}
+          <div className="sidebar__actions">
+            <ThemeToggle />
+            <button type="button" className="button button--ghost button--small" onClick={logout}>
+              Sair
+            </button>
+          </div>
+        </div>
       </aside>
       <main className="content">
         <Outlet />

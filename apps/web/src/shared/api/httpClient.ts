@@ -14,13 +14,37 @@ export class ApiRequestError extends Error {
   }
 }
 
+/* ---------- Sessão: definida pelo AuthProvider ---------- */
+
+let authToken: string | null = null;
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
+}
+
+/** Chamado quando uma requisição autenticada recebe 401 (AC-504). */
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
+/* ---------- Requisições ---------- */
+
 export async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const sentWithToken = authToken !== null;
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...init.headers,
+    },
   });
 
   if (!response.ok) {
+    if (response.status === 401 && sentWithToken) {
+      unauthorizedHandler?.();
+    }
     throw await toApiRequestError(response);
   }
   if (response.status === 204) {

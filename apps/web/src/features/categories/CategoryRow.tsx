@@ -1,6 +1,7 @@
 import type { CategoryDTO } from '@fintrack/contracts';
 import { useState, type FormEvent } from 'react';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
+import { useToast } from '../../shared/ui/Toaster';
 import { useDeleteCategory, useRenameCategory } from './hooks';
 
 export function CategoryRow({ category }: { category: CategoryDTO }) {
@@ -8,10 +9,19 @@ export function CategoryRow({ category }: { category: CategoryDTO }) {
   const [name, setName] = useState(category.name);
   const renameCategory = useRenameCategory();
   const deleteCategory = useDeleteCategory();
+  const notify = useToast();
 
   const submitRename = (event: FormEvent) => {
     event.preventDefault();
-    renameCategory.mutate({ id: category.id, name }, { onSuccess: () => setIsEditing(false) });
+    renameCategory.mutate(
+      { id: category.id, name },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+          notify('Categoria renomeada');
+        },
+      },
+    );
   };
 
   const cancelRename = () => {
@@ -22,7 +32,9 @@ export function CategoryRow({ category }: { category: CategoryDTO }) {
 
   const confirmDelete = () => {
     if (window.confirm(`Excluir a categoria "${category.name}"?`)) {
-      deleteCategory.mutate(category.id);
+      deleteCategory.mutate(category.id, {
+        onSuccess: () => notify(`Categoria "${category.name}" excluída`),
+      });
     }
   };
 

@@ -5,6 +5,7 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { SegmentedControl } from '../../shared/ui/SegmentedControl';
+import { DashboardSkeleton } from './DashboardSkeleton';
 import { useDashboardSummary } from './api';
 import { CategoryRanking } from './CategoryRanking';
 import { MonthlyChart } from './MonthlyChart';
@@ -42,7 +43,7 @@ export function DashboardPage() {
       />
 
       <ErrorBanner error={summary.error} />
-      {summary.isLoading && <p className="muted">Carregando…</p>}
+      {summary.isLoading && <DashboardSkeleton />}
 
       {data && (
         <>
@@ -50,7 +51,7 @@ export function DashboardPage() {
           {isEmpty ? (
             <section className="card">
               <EmptyState title="Sem movimento neste período.">
-                Registre suas <Link to="/transactions">transações</Link> para ver os gráficos.
+                Registre suas <Link to="/app/transactions">transações</Link> para ver os gráficos.
               </EmptyState>
             </section>
           ) : (

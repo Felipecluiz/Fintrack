@@ -53,3 +53,14 @@ pelo Worker e pelo front. Mudou o contrato, os dois quebram na compilação.
 - Um caso de uso por arquivo, com um único método público `execute`.
 - Erros de domínio são tipados (`ValidationError`, `NotFoundError`,
   `ConflictError`, `BusinessRuleError`) e mapeados para HTTP em um só lugar.
+
+## VIII. Segurança por padrão
+
+- Todo dado de negócio tem dono. O isolamento é garantido na construção dos
+  repositórios (escopados por `userId`), não por lembrança em cada caso de uso.
+- Segredos nunca entram no repositório: `JWT_SECRET` de produção é um secret
+  do Worker. Sem segredo, a API falha fechada.
+- Senhas só como hash lento com salt (PBKDF2). Erros de login não revelam se
+  o e-mail existe.
+- Toda rota nova é protegida por padrão; rotas públicas são exceção explícita
+  em `createApp`.

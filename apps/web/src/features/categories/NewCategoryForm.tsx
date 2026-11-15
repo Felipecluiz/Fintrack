@@ -2,16 +2,26 @@ import type { TransactionType } from '@fintrack/contracts';
 import { useState, type FormEvent } from 'react';
 import { TRANSACTION_TYPE_LABEL } from '../../shared/labels';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
+import { useToast } from '../../shared/ui/Toaster';
 import { useCreateCategory } from './hooks';
 
 export function NewCategoryForm() {
   const [name, setName] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
   const createCategory = useCreateCategory();
+  const notify = useToast();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    createCategory.mutate({ name, type }, { onSuccess: () => setName('') });
+    createCategory.mutate(
+      { name, type },
+      {
+        onSuccess: (category) => {
+          setName('');
+          notify(`Categoria "${category.name}" criada`);
+        },
+      },
+    );
   };
 
   return (

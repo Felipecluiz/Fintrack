@@ -16,7 +16,17 @@ import type {
   TransactionFilter,
   TransactionRepository,
 } from '../../src/domain/transaction/TransactionRepository';
-import { wireUseCases, type UseCases } from '../../src/main/container';
+import type { PasswordHasher } from '../../src/application/auth/ports/PasswordHasher';
+import type { Email } from '../../src/domain/user/Email';
+import { User, type UserSnapshot } from '../../src/domain/user/User';
+import type { UserRepository } from '../../src/domain/user/UserRepository';
+import { HmacJwtTokenService } from '../../src/infrastructure/security/HmacJwtTokenService';
+import {
+  wireAuth,
+  wireUseCases,
+  type AuthModule,
+  type UseCases,
+} from '../../src/main/container';
 
 export class FixedClock implements Clock {
   constructor(private current = new Date('2026-11-13T12:00:00.000Z')) {}
@@ -34,9 +44,12 @@ export class FixedClock implements Clock {
 export class SequentialIdGenerator implements IdGenerator {
   private counter = 0;
 
+  /** `prefix` (um dígito hexa) separa os ids de geradores diferentes. */
+  constructor(private readonly prefix = '0') {}
+
   next(): string {
     this.counter += 1;
-    return `00000000-0000-4000-8000-${String(this.counter).padStart(12, '0')}`;
+    return `${this.prefix.repeat(8)}-0000-4000-8000-${String(this.counter).padStart(12, '0')}`;
   }
 }
 
@@ -172,7 +185,7 @@ export interface TestContext {
   clock: FixedClock;
 }
 
-export function createTestContext(): TestContext {
+export function createTestContext(idPrefix = '0'): TestContext {
   const categories = new InMemoryCategoryRepository();
   const transactions = new InMemoryTransactionRepository();
   const clock = new FixedClock();
@@ -181,7 +194,62 @@ export function createTestContext(): TestContext {
     transactions,
     reports: new InMemoryReportReader(transactions, categories),
     clock,
-    ids: new SequentialIdGenerator(),
+    ids: new SequentialIdGenerator(idPrefix),
   });
   return { useCases, categories, transactions, clock };
+}
+
+/* ---------- Autenticação ---------- */
+
+export const TEST_JWT_SECRET = 'test-secret-with-at-least-32-characters!';
+
+export class InMemoryUserRepository implements UserRepository {
+  private readonly rows = new Map<string, UserSnapshot>();
+
+  async findById(id: string): Promise<User | null> {
+    const row = this.rows.get(id);
+    return row ? User.restore(row) : null;
+  }
+
+  async findByEmail(email: Email): Promise<User | null> {
+    const row = [...this.rows.values()].find((u) => u.email.equals(email));
+    return row ? User.restore(row) : null;
+  }
+
+  async save(user: User): Promise<void> {
+    this.rows.set(user.id, user.toSnapshot());
+  }
+
+  all(): UserSnapshot[] {
+    return [...this.rows.values()];
+  }
+}
+
+/** Hash "de mentira" e rápido — os testes de PBKDF2 ficam em infrastructure. */
+export class FakePasswordHasher implements PasswordHasher {
+  async hash(password: string): Promise<string> {
+    return `hashed:${password}`;
+  }
+
+  async verify(password: string, storedHash: string | null): Promise<boolean> {
+    return storedHash === `hashed:${password}`;
+  }
+}
+
+export interface AuthTestContext {
+  auth: AuthModule;
+  users: InMemoryUserRepository;
+  clock: FixedClock;
+}
+
+export function createAuthTestContext(clock = new FixedClock()): AuthTestContext {
+  const users = new InMemoryUserRepository();
+  const auth = wireAuth({
+    users,
+    hasher: new FakePasswordHasher(),
+    tokens: new HmacJwtTokenService(TEST_JWT_SECRET, clock),
+    clock,
+    ids: new SequentialIdGenerator('a'),
+  });
+  return { auth, users, clock };
 }

@@ -6,6 +6,7 @@ import { formatCents } from '../../shared/lib/money';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { useToast } from '../../shared/ui/Toaster';
 import { useCategories } from '../categories/hooks';
 import { useDeleteTransaction, useTransactions } from './hooks';
 import { EMPTY_FILTERS, TransactionFilters, type Filters } from './TransactionFilters';
@@ -30,6 +31,7 @@ export function TransactionsPage() {
     categoryId: filters.categoryId || undefined,
   });
   const deleteTransaction = useDeleteTransaction();
+  const notify = useToast();
 
   const categoryNames = useMemo(
     () => new Map((categories.data ?? []).map((c) => [c.id, c.name])),
@@ -44,7 +46,9 @@ export function TransactionsPage() {
 
   const confirmDelete = (transaction: TransactionDTO) => {
     if (window.confirm(`Excluir "${transaction.description}"?`)) {
-      deleteTransaction.mutate(transaction.id);
+      deleteTransaction.mutate(transaction.id, {
+        onSuccess: () => notify('Transação excluída'),
+      });
     }
   };
 
@@ -83,13 +87,13 @@ export function TransactionsPage() {
           <EmptyState title="Nenhuma transação encontrada.">
             {categories.data?.length === 0 && (
               <>
-                Comece criando suas <Link to="/categories">categorias</Link>.
+                Comece criando suas <Link to="/app/categories">categorias</Link>.
               </>
             )}
           </EmptyState>
         ) : (
           <div className="table-wrapper">
-            <table className="table">
+            <table className="table table--responsive">
               <thead>
                 <tr>
                   <th scope="col">Data</th>
@@ -106,10 +110,10 @@ export function TransactionsPage() {
               <tbody>
                 {transactions.data?.items.map((transaction) => (
                   <tr key={transaction.id}>
-                    <td>{formatDate(transaction.occurredOn)}</td>
-                    <td>{transaction.description}</td>
-                    <td className="muted">{categoryNames.get(transaction.categoryId) ?? '—'}</td>
-                    <td className="numeric">
+                    <td data-label="Data">{formatDate(transaction.occurredOn)}</td>
+                    <td data-label="Descrição">{transaction.description}</td>
+                    <td data-label="Categoria" className="muted">{categoryNames.get(transaction.categoryId) ?? '—'}</td>
+                    <td data-label="Valor" className="numeric">
                       <span className={`amount amount--${transaction.type}`}>
                         {transaction.type === 'income' ? '+' : '−'}{' '}
                         {formatCents(transaction.amountCents)}

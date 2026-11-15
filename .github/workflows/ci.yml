@@ -3,10 +3,11 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master, main]
 
 jobs:
   check:
+    name: Typecheck, lint e testes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,12 +18,44 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
-      - name: Spec traceability (every AC in specs must appear in a test)
+      - name: Testes unitários e HTTP (com cobertura)
+        run: npm run test:coverage
+      - name: Testes de integração (Workers + D1)
+        run: npm run test:integration
+      - name: Rastreabilidade (todo AC não-UI precisa de um teste)
         run: |
           missing=0
           for ac in $(grep -rhoE "AC-[0-9]{3}" specs/features/0*/spec.md | sort -u); do
             if grep -q "(UI)" <(grep -rh "\*\*$ac\*\*" specs/features); then continue; fi
-            if ! grep -rq "$ac" apps/api/test; then echo "::warning::$ac has no test"; missing=1; fi
+            if ! grep -rq "$ac" apps/api/test; then echo "::error::$ac has no test"; missing=1; fi
           done
           exit $missing
+      - name: Resumo de cobertura
+        if: always()
+        run: |
+          for app in api web; do
+            file="apps/$app/coverage/coverage-summary.json"
+            [ -f "$file" ] || continue
+            pct=$(node -p "require('./$file').total.lines.pct")
+            echo "**$app**: $pct% das linhas cobertas" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run e2e:install
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

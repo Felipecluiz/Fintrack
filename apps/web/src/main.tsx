@@ -3,7 +3,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './app/router';
+import { AuthProvider } from './features/auth/AuthProvider';
+import { applyThemePreference, readThemePreference } from './shared/ui/theme';
+import { ToastProvider } from './shared/ui/Toaster';
 import './styles.css';
+
+// Aplica o tema salvo antes do primeiro render (evita "piscar").
+applyThemePreference(readThemePreference());
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,7 +23,11 @@ if (!root) throw new Error('Root element not found');
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <AuthProvider>
+          <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

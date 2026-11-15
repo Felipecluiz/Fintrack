@@ -4,8 +4,9 @@ import { DomainError, type DomainErrorCode } from '../../domain/shared/errors';
 import type { AppEnv } from './AppEnv';
 
 /** O único lugar que traduz erros de domínio para status HTTP. */
-const STATUS_BY_CODE: Record<DomainErrorCode, 400 | 404 | 409 | 422> = {
+const STATUS_BY_CODE: Record<DomainErrorCode, 400 | 401 | 404 | 409 | 422> = {
   VALIDATION_ERROR: 400,
+  UNAUTHORIZED: 401,
   NOT_FOUND: 404,
   CONFLICT: 409,
   BUSINESS_RULE_VIOLATION: 422,

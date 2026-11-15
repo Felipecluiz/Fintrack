@@ -24,19 +24,23 @@ interface WhereClause {
   params: unknown[];
 }
 
+/** Escopado por dono (BR-405) — ver `D1CategoryRepository`. */
 export class D1TransactionRepository implements TransactionRepository {
-  constructor(private readonly db: D1Database) {}
+  constructor(
+    private readonly db: D1Database,
+    private readonly ownerId: string,
+  ) {}
 
   async findById(id: string): Promise<Transaction | null> {
     const row = await this.db
-      .prepare('SELECT * FROM transactions WHERE id = ?')
-      .bind(id)
+      .prepare('SELECT * FROM transactions WHERE id = ? AND user_id = ?')
+      .bind(id, this.ownerId)
       .first<TransactionRow>();
     return row ? toEntity(row) : null;
   }
 
   async list(filter: TransactionFilter, page: PageRequest): Promise<PageResult<Transaction>> {
-    const where = buildWhere(filter);
+    const where = this.buildWhere(filter);
     const offset = (page.page - 1) * page.pageSize;
 
     const [rows, count] = await Promise.all([
@@ -62,18 +66,20 @@ export class D1TransactionRepository implements TransactionRepository {
     await this.db
       .prepare(
         `INSERT INTO transactions
-           (id, description, amount_cents, type, category_id, occurred_on, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           (id, user_id, description, amount_cents, type, category_id, occurred_on, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET
            description  = excluded.description,
            amount_cents = excluded.amount_cents,
            type         = excluded.type,
            category_id  = excluded.category_id,
            occurred_on  = excluded.occurred_on,
-           updated_at   = excluded.updated_at`,
+           updated_at   = excluded.updated_at
+         WHERE transactions.user_id = excluded.user_id`,
       )
       .bind(
         t.id,
+        this.ownerId,
         t.description,
         t.amount.cents,
         t.type,
@@ -86,43 +92,43 @@ export class D1TransactionRepository implements TransactionRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.prepare('DELETE FROM transactions WHERE id = ?').bind(id).run();
+    await this.db
+      .prepare('DELETE FROM transactions WHERE id = ? AND user_id = ?')
+      .bind(id, this.ownerId)
+      .run();
   }
 
   async countByCategory(categoryId: string): Promise<number> {
     const row = await this.db
-      .prepare('SELECT COUNT(*) AS total FROM transactions WHERE category_id = ?')
-      .bind(categoryId)
+      .prepare('SELECT COUNT(*) AS total FROM transactions WHERE user_id = ? AND category_id = ?')
+      .bind(this.ownerId, categoryId)
       .first<{ total: number }>();
     return row?.total ?? 0;
   }
-}
 
-function buildWhere(filter: TransactionFilter): WhereClause {
-  const conditions: string[] = [];
-  const params: unknown[] = [];
+  private buildWhere(filter: TransactionFilter): WhereClause {
+    const conditions = ['user_id = ?'];
+    const params: unknown[] = [this.ownerId];
 
-  if (filter.from) {
-    conditions.push('occurred_on >= ?');
-    params.push(filter.from.toString());
-  }
-  if (filter.to) {
-    conditions.push('occurred_on <= ?');
-    params.push(filter.to.toString());
-  }
-  if (filter.type) {
-    conditions.push('type = ?');
-    params.push(filter.type);
-  }
-  if (filter.categoryId) {
-    conditions.push('category_id = ?');
-    params.push(filter.categoryId);
-  }
+    if (filter.from) {
+      conditions.push('occurred_on >= ?');
+      params.push(filter.from.toString());
+    }
+    if (filter.to) {
+      conditions.push('occurred_on <= ?');
+      params.push(filter.to.toString());
+    }
+    if (filter.type) {
+      conditions.push('type = ?');
+      params.push(filter.type);
+    }
+    if (filter.categoryId) {
+      conditions.push('category_id = ?');
+      params.push(filter.categoryId);
+    }
 
-  return {
-    sql: conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '',
-    params,
-  };
+    return { sql: `WHERE ${conditions.join(' AND ')}`, params };
+  }
 }
 
 function toEntity(row: TransactionRow): Transaction {

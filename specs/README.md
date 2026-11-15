@@ -38,11 +38,13 @@ spec ficou desatualizada.
 | 001 | [Categorias](features/001-categories/spec.md)   | Implementada |
 | 002 | [Transações](features/002-transactions/spec.md) | Implementada |
 | 003 | [Dashboard](features/003-dashboard/spec.md)     | Implementada |
+| 004 | [Autenticação e multiusuário](features/004-auth/spec.md) | Implementada |
+| 005 | [Página inicial e UX](features/005-landing-and-ux/spec.md) | Implementada |
 
 ## Criando uma nova feature
 
 ```bash
-cp -r specs/features/_template specs/features/004-minha-feature
+cp -r specs/features/_template specs/features/006-minha-feature
 ```
 
 Preencha `spec.md`, revise, só então escreva `plan.md` e `tasks.md`.

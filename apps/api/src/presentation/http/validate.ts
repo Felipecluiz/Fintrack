@@ -16,7 +16,7 @@ export const validate = <Target extends keyof ValidationTargets, Schema extends 
       const body: ApiErrorBody = {
         error: {
           code: 'VALIDATION_ERROR',
-          message: `Invalid ${target}`,
+          message: `Invalid ${String(target)}`,
           details: result.error.flatten(),
         },
       };
