@@ -1,3 +1,6 @@
+// Fontes hospedadas no próprio site (a CSP só permite font-src 'self').
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/figtree';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

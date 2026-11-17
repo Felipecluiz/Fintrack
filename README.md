@@ -170,13 +170,28 @@ npx wrangler deploy --env production -c apps/api/wrangler.toml
 VITE_API_URL=https://fintrack-api-production.<subdominio>.workers.dev npm run deploy -w @fintrack/web
 ```
 
-### GitHub Actions
+### Deploy automático (GitHub Actions)
 
-1. Mova os workflows: `mkdir -p .github/workflows && mv workflows/*.yml .github/workflows/`
-2. Em *Settings → Secrets and variables → Actions*, crie os secrets
-   `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` e a variável `VITE_API_URL`.
-3. Todo push na `master` roda CI (typecheck, lint, testes, integração, E2E) e
-   deploy (migrations, Worker e Pages).
+Um comando configura tudo, uma vez só:
+
+```bash
+npm run setup:deploy             # interativo
+npm run setup:deploy -- --dry-run   # só mostra o que faria
+```
+
+O script (`scripts/setup-deploy.mjs`):
+
+1. confere Node, GitHub CLI (`gh auth login`), git e o repositório;
+2. coloca os workflows em `.github/workflows`;
+3. valida o token da Cloudflare e **testa cada permissão** (Workers Scripts, D1 e Pages) antes de mudar qualquer coisa;
+4. confere D1, projeto Pages, URLs públicas e o CORS de produção;
+5. cria o `JWT_SECRET` no Worker (gerado localmente, nunca exibido);
+6. cadastra `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` e `VITE_API_URL` no GitHub;
+7. opcionalmente aplica migrations, recria a conta demo (`--seed`) e faz o push.
+
+É idempotente: rodar de novo só confere. Flags: `--yes`, `--seed`, `--rotate-secrets`.
+Depois disso, todo push na `master` roda CI (typecheck, lint, testes, integração, E2E) e
+deploy (migrations, Worker e Pages).
 
 ## API
 

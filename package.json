@@ -18,7 +18,8 @@
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "test:integration": "npm run test:integration -w @fintrack/api",
     "e2e": "npm run db:migrate:local && playwright test",
-    "e2e:install": "playwright install --with-deps chromium"
+    "e2e:install": "playwright install --with-deps chromium",
+    "setup:deploy": "node scripts/setup-deploy.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
