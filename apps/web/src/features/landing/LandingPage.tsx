@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { formatCents } from '../../shared/lib/money';
 import { Brand } from '../../shared/ui/Brand';
@@ -18,7 +18,9 @@ import {
   heroTimeline,
   heroTopCategoryShare,
 } from './heroData';
+import { HowItWorks } from './HowItWorks';
 import { LedgerBackdrop } from './LedgerBackdrop';
+import { UnderTheHood } from './UnderTheHood';
 import { useScrollProgress } from './useScrollProgress';
 
 const FEATURES: Array<{ title: string; text: string; icon: ReactNode }> = [
@@ -42,12 +44,6 @@ const FEATURES: Array<{ title: string; text: string; icon: ReactNode }> = [
     text: 'Funciona no navegador do celular, sem instalar nada. Rápido porque roda perto de você, na rede da Cloudflare.',
     icon: <path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm3 15h2" />,
   },
-];
-
-const STEPS = [
-  { title: 'Crie sua conta', text: 'Nome, e-mail e senha. Leva menos de um minuto.' },
-  { title: 'Monte suas categorias', text: 'Salário, Moradia, Mercado… do jeito que você pensa.' },
-  { title: 'Lance e acompanhe', text: 'Cada lançamento atualiza o dashboard na hora.' },
 ];
 
 const FAQ = [
@@ -81,6 +77,9 @@ export function LandingPage() {
   const [trackRef, scroll] = useScrollProgress<HTMLDivElement>();
   const timeline = heroTimeline(scroll.progress);
   const waitingForScroll = scroll.enabled && timeline.visibleEntries === 0;
+  // A prévia "se monta" e o fechamento traça a linha subindo ao entrar na tela.
+  const [previewRef, previewScroll] = useScrollProgress<HTMLElement>('pass');
+  const [closingRef, closingScroll] = useScrollProgress<HTMLElement>('pass');
 
   const primaryCta = (
     <Link to={user ? '/app' : '/register'} className="button button--primary button--large">
@@ -109,6 +108,7 @@ export function LandingPage() {
         <nav className="landing__anchors" aria-label="Seções">
           <a href="#recursos">Recursos</a>
           <a href="#como-funciona">Como funciona</a>
+          <a href="#por-dentro">Por dentro</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>
         <div className="landing__account">
@@ -216,7 +216,12 @@ export function LandingPage() {
         </section>
         </div>
 
-        <section className="preview" aria-labelledby="preview-title">
+        <section
+          ref={previewRef}
+          className="preview"
+          aria-labelledby="preview-title"
+          style={{ '--reveal': previewScroll.progress } as CSSProperties}
+        >
           <div className="section-heading">
             <h2 id="preview-title">Assim fica o seu dashboard</h2>
             <span className="badge">Dados fictícios</span>
@@ -250,20 +255,9 @@ export function LandingPage() {
           </ul>
         </section>
 
-        <section id="como-funciona" className="steps" aria-labelledby="steps-title">
-          <h2 id="steps-title">Como funciona</h2>
-          <ol className="steps__list">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="step">
-                <span className="step__number" aria-hidden="true">
-                  {index + 1}
-                </span>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <HowItWorks />
+
+        <UnderTheHood />
 
         <section id="duvidas" className="faq" aria-labelledby="faq-title">
           <h2 id="faq-title">Dúvidas</h2>
@@ -277,7 +271,13 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="closing" aria-labelledby="closing-title">
+        <section
+          ref={closingRef}
+          className="closing"
+          aria-labelledby="closing-title"
+          style={{ '--rise': closingScroll.progress } as CSSProperties}
+        >
+          <ClosingBackdrop />
           <h2 id="closing-title">Pronto para fechar o mês no azul?</h2>
           <p>Comece agora ou explore a conta demo, já com seis meses de lançamentos.</p>
           <div className="hero__actions">
@@ -293,5 +293,29 @@ export function LandingPage() {
         <p>Pessoas, valores e lançamentos mostrados nesta página são fictícios.</p>
       </footer>
     </div>
+  );
+}
+
+/** Linha subindo atrás do fechamento: o mês "fechando no azul". */
+function ClosingBackdrop() {
+  return (
+    <svg
+      className="closing__backdrop"
+      viewBox="0 0 1000 320"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g className="closing__rules">
+        {[40, 100, 160, 220, 280].map((y) => (
+          <line key={y} x1="0" x2="1000" y1={y} y2={y} />
+        ))}
+      </g>
+      <path
+        className="closing__line"
+        pathLength={1}
+        d="M520 300 L600 288 L680 296 L760 252 L840 262 L900 196 L960 150 L1000 60"
+      />
+    </svg>
   );
 }

@@ -83,3 +83,46 @@ describe('heroTimeline (scroll = o mês passando)', () => {
     expect(heroTimeline(0.35).balanceCents).toBe(650_000); // só o salário entrou
   });
 });
+
+describe('howItWorksScene (rolagem = os passos acontecendo)', () => {
+  it('starts on step 1 with an empty form and ends on step 3 with every entry', async () => {
+    const { howItWorksScene, EXAMPLE_CATEGORIES, EXAMPLE_ENTRIES } = await import(
+      './howItWorksScene'
+    );
+
+    expect(howItWorksScene(0)).toMatchObject({
+      step: 0,
+      typed: { name: 0, email: 0, password: 0 },
+      visibleCategories: 0,
+      visibleEntries: 0,
+    });
+    const end = howItWorksScene(1);
+    expect(end.step).toBe(2);
+    expect(end.visibleCategories).toBe(EXAMPLE_CATEGORIES.length);
+    expect(end.visibleEntries).toBe(EXAMPLE_ENTRIES.length);
+    expect(end.balanceCents).toBe(
+      EXAMPLE_ENTRIES.reduce((sum, entry) => sum + entry.amountCents, 0),
+    );
+  });
+
+  it('moves through the steps in order', async () => {
+    const { howItWorksScene } = await import('./howItWorksScene');
+    const steps = [0.1, 0.4, 0.8].map((p) => howItWorksScene(p).step);
+
+    expect(steps).toEqual([0, 1, 2]);
+  });
+});
+
+describe('LandingPage sections', () => {
+  it('explains how it works and what is under the hood, without depending on scroll', () => {
+    renderWithProviders(<LandingPage />);
+
+    expect(screen.getByRole('heading', { name: 'Como funciona' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Lance e acompanhe' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Por dentro do projeto' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver o código no GitHub' })).toHaveAttribute(
+      'href',
+      'https://github.com/Felipecluiz/Fintrack',
+    );
+  });
+});

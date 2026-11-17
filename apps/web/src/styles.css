@@ -1339,7 +1339,6 @@ a.button {
 
 /* Recursos: linhas de livro, não cartões */
 .features,
-.steps,
 .faq {
   display: grid;
   gap: 28px;
@@ -1378,11 +1377,29 @@ a.button {
   stroke-linejoin: round;
 }
 
-/* Como funciona: uma sequência de verdade, então numerada */
+/* Como funciona: uma sequência de verdade, então numerada. No desktop a tela
+   gruda e a rolagem avança os passos (HowItWorks + useScrollProgress). */
+.landing main > .how-track {
+  width: var(--landing-width);
+  margin-inline: auto;
+  scroll-margin-top: 64px;
+}
+
+.how {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  align-items: center;
+  gap: 64px;
+}
+
+.how__copy {
+  display: grid;
+  gap: 28px;
+}
+
 .steps__list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1390,14 +1407,25 @@ a.button {
 
 .step {
   display: grid;
-  align-content: start;
-  gap: 4px;
-  padding-top: 18px;
-  border-top: 2px solid var(--text-primary);
+  grid-template-columns: 56px 1fr;
+  align-items: start;
+  gap: 8px;
+  padding: 18px 0 18px 20px;
+  border-left: 2px solid var(--ledger);
+  transition:
+    border-color 240ms ease,
+    opacity 240ms ease;
+}
+
+.step[data-active='false'] {
+  opacity: 0.45;
+}
+
+.step[data-active='true'] {
+  border-left-color: var(--accent);
 }
 
 .step__number {
-  margin-bottom: 10px;
   color: var(--accent);
   font-family: var(--font-display);
   font-size: 2.6rem;
@@ -1407,8 +1435,295 @@ a.button {
 }
 
 .step p {
+  max-width: 40ch;
   margin: 0;
   color: var(--text-secondary);
+}
+
+.how__stage {
+  display: grid;
+  min-height: 360px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 24px 48px -28px color-mix(in srgb, var(--text-primary) 35%, transparent);
+}
+
+/* As três cenas ocupam a mesma célula; a anterior sobe e some, a próxima vem de baixo. */
+.how__scene {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  opacity: 0;
+  translate: 0 28px;
+  pointer-events: none;
+  transition:
+    opacity 320ms ease,
+    translate 320ms ease;
+}
+
+.how__stage[data-step='1'] .how__scene--signup,
+.how__stage[data-step='2'] .how__scene--signup,
+.how__stage[data-step='2'] .how__scene--categories {
+  translate: 0 -28px;
+}
+
+.how__stage[data-step='0'] .how__scene--signup,
+.how__stage[data-step='1'] .how__scene--categories,
+.how__stage[data-step='2'] .how__scene--entries {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.how__scene-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.how__field {
+  display: grid;
+  gap: 4px;
+}
+
+.how__field small {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.how__input {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.95rem;
+  transition: border-color 200ms ease;
+}
+
+.how__field[data-filled='true'] .how__input {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.how__caret {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+}
+
+.how__submit {
+  justify-self: start;
+  margin-top: 6px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-weight: 600;
+  transition:
+    background 240ms ease,
+    color 240ms ease;
+}
+
+.how__submit[data-ready='true'] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.how__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how__chip {
+  display: grid;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--series-expense, #eb6834);
+  border-radius: 10px;
+  background: var(--bg);
+  font-weight: 600;
+  transition:
+    opacity 240ms ease,
+    translate 240ms ease;
+}
+
+.how__chip--income {
+  border-left-color: var(--series-income, #2a78d6);
+}
+
+.how__chip small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.how__chip[data-visible='false'],
+.how__entries li[data-visible='false'] {
+  opacity: 0;
+  translate: 0 8px;
+}
+
+.how__balance {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.how__entries {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how__entries li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ledger);
+  font-weight: 600;
+  transition:
+    opacity 240ms ease,
+    translate 240ms ease;
+}
+
+.how__entries small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+@media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
+  .landing main > .how-track {
+    height: 260vh;
+  }
+
+  .how-track .how {
+    position: sticky;
+    top: 64px;
+    min-height: calc(100vh - 64px);
+  }
+}
+
+/* Prévia: as barras crescem conforme a seção entra na tela (--reveal 0–1). */
+.preview .chart path.series--income,
+.preview .chart path.series--expense {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: scaleY(var(--reveal, 1));
+}
+
+.preview .ranking__bar {
+  transform-origin: left center;
+  transform: scaleX(var(--reveal, 1));
+}
+
+/* Por dentro: vista explodida das camadas (--spread 0–1). */
+.hood {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 64px;
+  scroll-margin-top: 80px;
+}
+
+.hood__copy {
+  display: grid;
+  justify-items: start;
+  gap: 22px;
+}
+
+.hood__lead {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.hood__stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hood__stack li {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.hood__layers {
+  --row: 104px;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hood__layer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+  gap: 28px;
+  height: var(--row);
+  z-index: calc(10 - var(--depth));
+}
+
+.hood__plate {
+  justify-self: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) calc(100% - var(--depth) * 22%), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow: 8px 8px 0 color-mix(in srgb, var(--accent-strong) calc(100% - var(--depth) * 20%), var(--surface));
+  /* Recolhidas, as placas descem até o Domínio; abertas, cada uma na sua linha.
+     Os textos ficam parados e só aparecem quando há espaço para eles. */
+  translate: 0 calc((1 - var(--spread, 1)) * var(--depth) * var(--row));
+  transform: rotateX(60deg) rotateZ(-45deg);
+}
+
+.hood__label {
+  opacity: calc(var(--spread, 1) * 2.2 - 1.2);
+}
+
+.hood__layer:last-child .hood__label {
+  opacity: 1;
+}
+
+.hood__label h3 {
+  margin: 0 0 2px;
+}
+
+.hood__label p {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 /* Dúvidas */
@@ -1463,6 +1778,9 @@ a.button {
 
 /* Fechamento: o único bloco de cor cheia da página */
 .closing {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   justify-items: start;
   gap: 14px;
@@ -1470,6 +1788,33 @@ a.button {
   border-radius: 28px;
   background: var(--accent);
   color: var(--accent-contrast);
+}
+
+.closing__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Duas velocidades: as linhas do livro descem devagar, o saldo sobe traçado. */
+.closing__rules {
+  stroke: color-mix(in srgb, var(--accent-contrast) 14%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transform: translateY(calc((1 - var(--rise, 1)) * -48px));
+}
+
+.closing__line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent-contrast) 55%, transparent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--rise, 1));
 }
 
 .closing h2 {
@@ -1544,9 +1889,28 @@ a.button {
   .ledger-list {
     grid-template-columns: 1fr;
   }
-  .steps__list {
+  .how,
+  .hood {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 40px;
+  }
+  .how__stage {
+    display: none;
+  }
+  .hood__layers {
+    --row: 136px;
+  }
+  .hood__label p {
+    font-size: 0.9rem;
+  }
+  .hood__layer {
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+  }
+  .hood__plate {
+    width: 84px;
+    height: 84px;
+    border-radius: 10px;
   }
 }
 
@@ -1590,7 +1954,11 @@ a.button {
     transition: none;
   }
   .faq__item summary::after,
-  .button {
+  .button,
+  .step,
+  .how__scene,
+  .how__chip,
+  .how__entries li {
     transition: none;
   }
 }

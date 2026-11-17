@@ -3,8 +3,22 @@ import { useLayoutEffect, useRef, useState } from 'react';
 /** Distância do topo em que o conteúdo "gruda" (altura da barra de navegação). */
 const STICKY_TOP = 64;
 
-/** Só no desktop e para quem não pediu menos movimento. */
-const ENABLED_QUERY = '(min-width: 961px) and (prefers-reduced-motion: no-preference)';
+/**
+ * - `sticky`: o primeiro filho do elemento fica grudado enquanto o elemento
+ *   (o "trilho") rola. 0 quando o trilho chega ao topo, 1 quando ele acaba.
+ *   Só no desktop, onde há espaço para a cena ficar parada.
+ * - `pass`: o elemento só atravessa a tela. 0 quando o topo dele aparece no
+ *   rodapé da janela, 1 quando chega a 30% da altura. Funciona em qualquer tela.
+ */
+export type ScrollMode = 'sticky' | 'pass';
+
+const ENABLED_QUERY: Record<ScrollMode, string> = {
+  sticky: '(min-width: 961px) and (prefers-reduced-motion: no-preference)',
+  pass: '(prefers-reduced-motion: no-preference)',
+};
+
+/** No modo `pass`, a animação termina quando o topo chega a esta fração da janela. */
+const PASS_END = 0.3;
 
 export interface ScrollProgress {
   /** `false` = mostra o estado final, sem depender da rolagem. */
@@ -15,19 +29,32 @@ export interface ScrollProgress {
 
 const STATIC: ScrollProgress = { enabled: false, progress: 1 };
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+function measureSticky(track: HTMLElement): number {
+  const sticky = track.firstElementChild as HTMLElement | null;
+  const scrollable = track.offsetHeight - (sticky?.offsetHeight ?? 0);
+  return scrollable > 0 ? (STICKY_TOP - track.getBoundingClientRect().top) / scrollable : 1;
+}
+
+function measurePass(element: HTMLElement): number {
+  const viewport = window.innerHeight;
+  return (viewport - element.getBoundingClientRect().top) / (viewport * (1 - PASS_END));
+}
+
 /**
- * Mede quanto do "trilho" (o elemento retornado) já foi rolado enquanto o
- * primeiro filho fica grudado (`position: sticky`). Atualiza uma vez por frame.
+ * Converte a rolagem num progresso 0–1 para o elemento retornado em `ref`.
+ * Atualiza no máximo uma vez por frame e respeita `prefers-reduced-motion`.
  */
-export function useScrollProgress<T extends HTMLElement>() {
+export function useScrollProgress<T extends HTMLElement>(mode: ScrollMode = 'sticky') {
   const ref = useRef<T>(null);
   const [state, setState] = useState<ScrollProgress>(STATIC);
 
   // Layout effect: o primeiro estado já sai medido, sem "piscar" o estado final.
   useLayoutEffect(() => {
-    const track = ref.current;
-    const media = window.matchMedia?.(ENABLED_QUERY);
-    if (!track || !media) return;
+    const element = ref.current;
+    const media = window.matchMedia?.(ENABLED_QUERY[mode]);
+    if (!element || !media) return;
 
     let frame = 0;
     const measure = () => {
@@ -36,10 +63,7 @@ export function useScrollProgress<T extends HTMLElement>() {
         setState((current) => (current.enabled ? STATIC : current));
         return;
       }
-      const sticky = track.firstElementChild as HTMLElement | null;
-      const scrollable = track.offsetHeight - (sticky?.offsetHeight ?? 0);
-      const raw = scrollable > 0 ? (STICKY_TOP - track.getBoundingClientRect().top) / scrollable : 1;
-      const progress = Math.min(1, Math.max(0, raw));
+      const progress = clamp01(mode === 'sticky' ? measureSticky(element) : measurePass(element));
       setState((current) =>
         current.enabled && Math.abs(current.progress - progress) < 0.002
           ? current
@@ -60,7 +84,7 @@ export function useScrollProgress<T extends HTMLElement>() {
       media.removeEventListener?.('change', schedule);
       cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [mode]);
 
   return [ref, state] as const;
 }

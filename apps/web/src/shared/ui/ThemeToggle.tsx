@@ -1,42 +1,50 @@
-import { useState } from 'react';
-import { applyThemePreference, readThemePreference, type ThemePreference } from './theme';
+import { useEffect, useState } from 'react';
+import { currentTheme, onSystemThemeChange, readStoredTheme, setTheme, type Theme } from './theme';
 
-const NEXT: Record<ThemePreference, ThemePreference> = {
-  system: 'light',
-  light: 'dark',
-  dark: 'system',
+const OPPOSITE: Record<Theme, Theme> = { light: 'dark', dark: 'light' };
+
+/** O botão mostra para onde vai: no claro, a lua; no escuro, o sol. */
+const ACTION: Record<Theme, { icon: string; label: string }> = {
+  light: { icon: '☾', label: 'Tema escuro' },
+  dark: { icon: '☀', label: 'Tema claro' },
 };
 
-const LABEL: Record<ThemePreference, string> = {
-  system: 'Tema: sistema',
-  light: 'Tema: claro',
-  dark: 'Tema: escuro',
-};
-
-const ICON: Record<ThemePreference, string> = {
-  system: '◐',
-  light: '☀',
-  dark: '☾',
-};
-
+/**
+ * Alterna entre claro e escuro. Começa no tema do sistema e, depois do
+ * primeiro clique, guarda a escolha (AC-505). Todo clique muda a tela.
+ */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemePreference>(readThemePreference);
+  const [theme, setThemeState] = useState<Theme>(currentTheme);
 
-  const cycle = () => {
-    const next = NEXT[theme];
-    applyThemePreference(next);
+  // Sem escolha guardada, acompanha o sistema se ele mudar com a página aberta.
+  useEffect(
+    () =>
+      onSystemThemeChange(() => {
+        if (!readStoredTheme()) setThemeState(currentTheme());
+      }),
+    [],
+  );
+
+  const toggle = () => {
+    const next = OPPOSITE[theme];
     setTheme(next);
+    setThemeState(next);
   };
+
+  const action = ACTION[theme];
 
   return (
     <button
       type="button"
       className="button button--ghost button--small theme-toggle"
-      onClick={cycle}
-      title={`${LABEL[theme]} (clique para alternar)`}
+      onClick={toggle}
+      aria-label={`Mudar para o ${action.label.toLowerCase()}`}
+      title={`Mudar para o ${action.label.toLowerCase()}`}
     >
-      <span aria-hidden>{ICON[theme]}</span>
-      <span className="theme-toggle__label">{LABEL[theme]}</span>
+      <span aria-hidden>{action.icon}</span>
+      <span className="theme-toggle__label" aria-hidden>
+        {action.label}
+      </span>
     </button>
   );
 }
