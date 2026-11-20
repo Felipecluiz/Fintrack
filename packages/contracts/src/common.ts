@@ -26,6 +26,7 @@ export type ErrorCode =
   | 'CONFLICT'
   | 'BUSINESS_RULE_VIOLATION'
   | 'RATE_LIMITED'
+  | 'HUMAN_VERIFICATION_FAILED'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {

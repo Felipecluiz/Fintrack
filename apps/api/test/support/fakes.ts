@@ -16,6 +16,7 @@ import type {
   TransactionFilter,
   TransactionRepository,
 } from '../../src/domain/transaction/TransactionRepository';
+import type { HumanVerifier } from '../../src/application/auth/ports/HumanVerifier';
 import type { PasswordHasher } from '../../src/application/auth/ports/PasswordHasher';
 import type { Email } from '../../src/domain/user/Email';
 import { User, type UserSnapshot } from '../../src/domain/user/User';
@@ -242,7 +243,10 @@ export interface AuthTestContext {
   clock: FixedClock;
 }
 
-export function createAuthTestContext(clock = new FixedClock()): AuthTestContext {
+export function createAuthTestContext(
+  clock = new FixedClock(),
+  humans?: HumanVerifier,
+): AuthTestContext {
   const users = new InMemoryUserRepository();
   const auth = wireAuth({
     users,
@@ -250,6 +254,19 @@ export function createAuthTestContext(clock = new FixedClock()): AuthTestContext
     tokens: new HmacJwtTokenService(TEST_JWT_SECRET, clock),
     clock,
     ids: new SequentialIdGenerator('a'),
+    humans,
   });
   return { auth, users, clock };
+}
+
+/** Aceita só o token combinado; registra o que recebeu para as asserções. */
+export class FakeHumanVerifier implements HumanVerifier {
+  readonly checks: Parameters<HumanVerifier['verify']>[0][] = [];
+
+  constructor(private readonly acceptedToken = 'human-ok') {}
+
+  async verify(check: Parameters<HumanVerifier['verify']>[0]): Promise<boolean> {
+    this.checks.push(check);
+    return check.token === this.acceptedToken;
+  }
 }

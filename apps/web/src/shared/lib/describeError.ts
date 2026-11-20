@@ -3,6 +3,8 @@ import { ApiRequestError } from '../api/httpClient';
 const TITLE_BY_CODE: Record<string, string> = {
   VALIDATION_ERROR: 'Alguns campos não estão válidos.',
   UNAUTHORIZED: 'E-mail ou senha incorretos, ou sua sessão expirou.',
+  HUMAN_VERIFICATION_FAILED:
+    'Não conseguimos confirmar que você é uma pessoa. Aguarde a verificação e tente de novo.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um minuto e tente de novo.',
   NOT_FOUND: 'O registro não foi encontrado. Ele pode ter sido removido.',
   CONFLICT: 'Já existe um registro com esses dados.',

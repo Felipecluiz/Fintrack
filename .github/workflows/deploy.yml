@@ -55,6 +55,7 @@ jobs:
       - run: npm run build -w @fintrack/web
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
       - name: Deploy no Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

@@ -1997,6 +1997,13 @@ a.button {
   margin: 4px 0 0;
 }
 
+/* Turnstile: reserva a altura do widget para o botão não pular. */
+.turnstile {
+  display: grid;
+  gap: 6px;
+  min-height: 65px;
+}
+
 .auth-card .form {
   display: grid;
   gap: 14px;

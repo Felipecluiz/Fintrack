@@ -8,6 +8,7 @@ import type {
 } from '@fintrack/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Env, RateLimiter } from '../../src/main/env';
+import { FakeHumanVerifier } from '../support/fakes';
 import { createTestApp } from '../support/testApp';
 
 const MISSING_ID = '99999999-9999-4999-8999-999999999999';
@@ -123,6 +124,97 @@ describe('HTTP API — public routes', () => {
     const blocked = await attempt();
     expect(blocked.status).toBe(429);
     expect((await blocked.json<ApiErrorBody>()).error.code).toBe('RATE_LIMITED');
+  });
+});
+
+describe('HTTP API — human verification (Turnstile)', () => {
+  const env: Env = { DB: {} as D1Database, ALLOWED_ORIGINS: 'http://localhost:5173' };
+  const newUser = { name: 'Ana', email: 'ana@example.com', password: 'segredo123' };
+
+  function register(app: ReturnType<typeof createTestApp>['app'], token?: string) {
+    return app.request(
+      '/api/auth/register',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '203.0.113.7',
+          ...(token ? { 'X-Turnstile-Token': token } : {}),
+        },
+        body: JSON.stringify(newUser),
+      },
+      env,
+    );
+  }
+
+  it('AC-413: rejects sign-up without a valid human token and creates no account', async () => {
+    const humans = new FakeHumanVerifier();
+    const { app } = createTestApp({ humans });
+
+    const missing = await register(app);
+    const invalid = await register(app, 'robot');
+
+    for (const res of [missing, invalid]) {
+      expect(res.status).toBe(403);
+      expect((await res.json<ApiErrorBody>()).error.code).toBe('HUMAN_VERIFICATION_FAILED');
+    }
+    const login = await app.request(
+      '/api/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newUser.email, password: newUser.password }),
+      },
+      env,
+    );
+    expect(login.status).toBe(401); // a conta não foi criada
+  });
+
+  it('AC-414: accepts sign-up with a valid token, checking action and IP', async () => {
+    const humans = new FakeHumanVerifier();
+    const { app } = createTestApp({ humans });
+
+    const res = await register(app, 'human-ok');
+
+    expect(res.status).toBe(201);
+    expect(humans.checks).toEqual([
+      { token: 'human-ok', action: 'register', remoteIp: '203.0.113.7' },
+    ]);
+  });
+
+  it('AC-414: login does not require the human token', async () => {
+    const { app } = createTestApp({ humans: new FakeHumanVerifier() });
+    await register(app, 'human-ok');
+
+    const login = await app.request(
+      '/api/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newUser.email, password: newUser.password }),
+      },
+      env,
+    );
+    expect(login.status).toBe(200);
+  });
+
+  it('allows the token header in CORS preflight', async () => {
+    const { app } = createTestApp();
+    const res = await app.request(
+      '/api/auth/register',
+      {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'http://localhost:5173',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'content-type,x-turnstile-token',
+        },
+      },
+      env,
+    );
+    expect(res.headers.get('Access-Control-Allow-Headers')?.toLowerCase()).toContain(
+      'x-turnstile-token',
+    );
   });
 });
 

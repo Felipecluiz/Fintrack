@@ -25,6 +25,10 @@ dashboard.
 - **BR-406** — Login e cadastro aceitam no máximo 10 tentativas por minuto por
   IP.
 - **BR-407** — Erro de login não revela se o e-mail existe.
+- **BR-408** — O cadastro só é aceito depois da verificação anti-robô do
+  Cloudflare Turnstile (ação `register`), validada no servidor pela API
+  Siteverify. Erro de rede ou resposta inválida contam como reprovação. O
+  login não exige a verificação (já tem BR-406), para não travar a conta demo.
 
 ## Critérios de aceite
 - **AC-401** — Dados válidos no cadastro → `201` com `token`, `expiresAt` e
@@ -45,6 +49,10 @@ dashboard.
 - **AC-411** — Excedido o limite de tentativas de login/cadastro → `429 RATE_LIMITED`.
 - **AC-412** — O hash armazenado verifica a senha correta, rejeita a errada e
   muda a cada cadastro (salt).
+- **AC-413** — Cadastro sem token do Turnstile ou com token recusado →
+  `403 HUMAN_VERIFICATION_FAILED`, e nenhuma conta é criada.
+- **AC-414** — Cadastro com token válido segue normalmente; o servidor confere
+  a ação `register` e repassa o IP de quem pediu. O login não pede token.
 
 ## Fora de escopo
 - Recuperação de senha por e-mail.

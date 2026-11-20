@@ -1,5 +1,6 @@
 import { GetCurrentUser } from '../application/auth/GetCurrentUser';
 import { LoginUser } from '../application/auth/LoginUser';
+import type { HumanVerifier } from '../application/auth/ports/HumanVerifier';
 import type { PasswordHasher } from '../application/auth/ports/PasswordHasher';
 import type { TokenService } from '../application/auth/ports/TokenService';
 import { RegisterUser } from '../application/auth/RegisterUser';
@@ -25,6 +26,7 @@ import { D1TransactionRepository } from '../infrastructure/d1/D1TransactionRepos
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
 import { HmacJwtTokenService } from '../infrastructure/security/HmacJwtTokenService';
 import { Pbkdf2PasswordHasher } from '../infrastructure/security/Pbkdf2PasswordHasher';
+import { TurnstileVerifier } from '../infrastructure/security/TurnstileVerifier';
 import { CryptoIdGenerator } from '../infrastructure/system/CryptoIdGenerator';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import type { Env } from './env';
@@ -65,12 +67,15 @@ export interface AuthDependencies {
   tokens: TokenService;
   clock: Clock;
   ids: IdGenerator;
+  /** Verificação anti-robô (BR-408). Ausente = desligada. */
+  humans?: HumanVerifier;
 }
 
 export function wireAuth(deps: AuthDependencies) {
-  const { users, hasher, tokens, clock, ids } = deps;
+  const { users, hasher, tokens, clock, ids, humans } = deps;
   return {
     tokens,
+    humans,
     useCases: {
       registerUser: new RegisterUser(users, hasher, tokens, clock, ids),
       loginUser: new LoginUser(users, hasher, tokens),
@@ -94,6 +99,7 @@ export function buildAuthModule(env: Env): AuthModule {
     tokens: new HmacJwtTokenService(env.JWT_SECRET, clock),
     clock,
     ids,
+    humans: env.TURNSTILE_SECRET_KEY ? new TurnstileVerifier(env.TURNSTILE_SECRET_KEY) : undefined,
   });
 }
 

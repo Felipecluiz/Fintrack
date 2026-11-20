@@ -9,6 +9,7 @@ import type { AppEnv } from './AppEnv';
 import { createOriginMatcher } from './corsOrigins';
 import { errorHandler } from './errorHandler';
 import { requireAuth } from './middleware/requireAuth';
+import { HUMAN_TOKEN_HEADER } from './middleware/requireHuman';
 import { authRoutes } from './routes/authRoutes';
 import { categoryRoutes } from './routes/categoryRoutes';
 import { dashboardRoutes } from './routes/dashboardRoutes';
@@ -34,7 +35,7 @@ export function createApp({ authFor, useCasesFor }: AppDependencies) {
     return cors({
       origin: (origin) => (isAllowed(origin) ? origin : null),
       allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization'],
+      allowHeaders: ['Content-Type', 'Authorization', HUMAN_TOKEN_HEADER],
       maxAge: 86400,
     })(c, next);
   });

@@ -2,8 +2,13 @@ import type { AuthResponseDTO, LoginInput, RegisterInput } from '@fintrack/contr
 import { http, jsonBody } from '../../shared/api/httpClient';
 
 export const authApi = {
-  register: (input: RegisterInput) =>
-    http<AuthResponseDTO>('/api/auth/register', { method: 'POST', ...jsonBody(input) }),
+  /** `humanToken`: token do Turnstile, quando a verificação anti-robô está ligada. */
+  register: (input: RegisterInput, humanToken?: string) =>
+    http<AuthResponseDTO>('/api/auth/register', {
+      method: 'POST',
+      ...jsonBody(input),
+      ...(humanToken ? { headers: { 'X-Turnstile-Token': humanToken } } : {}),
+    }),
 
   login: (input: LoginInput) =>
     http<AuthResponseDTO>('/api/auth/login', { method: 'POST', ...jsonBody(input) }),

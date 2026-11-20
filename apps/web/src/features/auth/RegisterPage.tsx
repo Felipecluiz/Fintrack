@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import type { RegisterInput } from '@fintrack/contracts';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ErrorBanner } from '../../shared/ui/ErrorBanner';
 import { useAuth } from './AuthProvider';
 import { AuthLayout } from './AuthLayout';
+import { TurnstileWidget, turnstileSiteKey, type TurnstileHandle } from './TurnstileWidget';
 
 /** Espelha BR-402 para dar feedback antes de ir ao servidor. */
 function passwordHint(password: string): string | null {
@@ -19,9 +21,17 @@ export function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // BR-408: com a chave configurada, o cadastro só sai depois da verificação.
+  const siteKey = turnstileSiteKey();
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const registerMutation = useMutation({
-    mutationFn: register,
+    mutationFn: ({ input, token }: { input: RegisterInput; token?: string }) =>
+      register(input, token),
+    // O token vale uma vez só: depois de um erro, o widget gera outro.
+    onError: () => turnstileRef.current?.reset(),
   });
+  const waitingForHuman = siteKey !== '' && humanToken === null;
 
   // Um único redirecionamento, decidido pelo estado: quem acabou de se cadastrar
   // começa pelas categorias; quem já chegou logado vai para o dashboard.
@@ -34,7 +44,8 @@ export function RegisterPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (hint) return;
-    registerMutation.mutate({ name, email, password });
+    if (waitingForHuman) return;
+    registerMutation.mutate({ input: { name, email, password }, token: humanToken ?? undefined });
   };
 
   return (
@@ -84,10 +95,18 @@ export function RegisterPage() {
             {hint ?? 'Mínimo de 8 caracteres, com letras e números.'}
           </small>
         </label>
+        {siteKey && (
+          <TurnstileWidget
+            ref={turnstileRef}
+            siteKey={siteKey}
+            action="register"
+            onToken={setHumanToken}
+          />
+        )}
         <ErrorBanner error={registerMutation.error} />
         <button
           className="button button--primary button--block"
-          disabled={registerMutation.isPending}
+          disabled={registerMutation.isPending || waitingForHuman}
         >
           {registerMutation.isPending ? 'Criando conta…' : 'Criar conta'}
         </button>

@@ -10,6 +10,10 @@ compatibility_flags = ["nodejs_compat"]
 ALLOWED_ORIGINS = "http://localhost:5173"
 # Só para desenvolvimento. Em produção use: npx wrangler secret put JWT_SECRET --env production
 JWT_SECRET = "dev-only-secret-change-me-0123456789abcdef"
+# Chave de TESTE pública do Turnstile: aceita só o token de teste do widget de
+# teste (apps/web/.env.development). Em produção vem de um secret:
+#   npx wrangler secret put TURNSTILE_SECRET_KEY --env production
+TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA"
 
 [[d1_databases]]
 binding = "DB"

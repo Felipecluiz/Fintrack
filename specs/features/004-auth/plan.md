@@ -34,7 +34,7 @@ sem HTML vindo do usuário, expiração de 7 dias.
 ## Contrato de API
 | Método | Rota                 | Auth | Entrada         | Saída                  | Erros         |
 | ------ | -------------------- | ---- | --------------- | ---------------------- | ------------- |
-| POST   | `/api/auth/register` | —    | `RegisterInput` | `AuthResponseDTO` 201  | 400, 409, 429 |
+| POST   | `/api/auth/register` | —    | `RegisterInput` + header `X-Turnstile-Token` | `AuthResponseDTO` 201  | 400, 403, 409, 429 |
 | POST   | `/api/auth/login`    | —    | `LoginInput`    | `AuthResponseDTO`      | 400, 401, 429 |
 | GET    | `/api/me`            | ✔︎   | —               | `UserDTO`              | 401           |
 | *      | demais `/api/*`      | ✔︎   | —               | —                      | + 401         |
@@ -49,3 +49,17 @@ as adota para o usuário demo.
 `JWT_SECRET` (≥ 32 caracteres). Em dev vem do `wrangler.toml`; em produção:
 `npx wrangler secret put JWT_SECRET --env production`. Sem segredo, a API
 recusa autenticar (falha fechada).
+
+## Verificação anti-robô (Turnstile)
+- **Porta** `HumanVerifier` na camada de aplicação; **adaptador**
+  `TurnstileVerifier` na infraestrutura (POST para a Siteverify com segredo,
+  token e IP; timeout de 5 s; falha fechada).
+- **Middleware** `requireHuman('register')` só na rota de cadastro. O token
+  vem no header `X-Turnstile-Token` (liberado no CORS), sem mexer no contrato.
+- **Front**: widget carregado só na tela de cadastro, com `render=explicit`; o
+  botão fica desabilitado até a verificação passar e o widget é reiniciado
+  depois de um erro (cada token vale uma vez).
+- **Chaves**: em dev e nos E2E, as chaves de teste públicas da Cloudflare
+  (`.env.development` e `wrangler.toml`). Em produção, `VITE_TURNSTILE_SITE_KEY`
+  (variável do GitHub) e `TURNSTILE_SECRET_KEY` (secret do Worker). Sem a chave
+  secreta, a API não exige a verificação.

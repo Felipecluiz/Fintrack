@@ -170,6 +170,26 @@ npx wrangler deploy --env production -c apps/api/wrangler.toml
 VITE_API_URL=https://fintrack-api-production.<subdominio>.workers.dev npm run deploy -w @fintrack/web
 ```
 
+### Turnstile (anti-robô no cadastro)
+
+O cadastro passa pelo [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/).
+Em desenvolvimento e nos testes E2E já vêm as chaves de teste públicas (o widget
+sempre passa). Para produção:
+
+1. No painel da Cloudflare, **Turnstile → Add widget**, com o hostname
+   `fintrack-web-0ff.pages.dev` e o modo **Managed**.
+2. Guarde a chave secreta no Worker:
+   ```bash
+   npx wrangler secret put TURNSTILE_SECRET_KEY --env production -c apps/api/wrangler.toml
+   ```
+3. Cadastre a sitekey como variável do repositório:
+   ```bash
+   gh variable set VITE_TURNSTILE_SITE_KEY --body "<sitekey>"
+   ```
+
+Sem a chave secreta a API não exige a verificação; sem a sitekey o front não
+mostra o widget. Configure as duas antes do próximo deploy.
+
 ### Deploy automático (GitHub Actions)
 
 Um comando configura tudo, uma vez só:

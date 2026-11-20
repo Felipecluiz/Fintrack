@@ -17,7 +17,7 @@ import { clearSession, loadSession, saveSession, type Session } from './session'
 interface AuthContextValue {
   user: UserDTO | null;
   login: (input: LoginInput) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput, humanToken?: string) => Promise<void>;
   loginAsDemo: () => Promise<void>;
   logout: () => void;
 }
@@ -70,7 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user: session?.user ?? null,
       login: async (input) => startSession(await authApi.login(input)),
-      register: async (input) => startSession(await authApi.register(input)),
+      register: async (input, humanToken) =>
+        startSession(await authApi.register(input, humanToken)),
       loginAsDemo: async () => startSession(await authApi.login(DEMO_CREDENTIALS)),
       logout,
     }),
